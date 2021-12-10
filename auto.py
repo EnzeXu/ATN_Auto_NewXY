@@ -37,7 +37,7 @@ from tools import *
 
 
 def train(main_path, data_name, parameters, print_flag=True):
-    enze_patient_data = np.load(main_path + "data/enze_patient_data_n.npy", allow_pickle=True)
+    enze_patient_data = np.load(main_path + "data/enze_patient_data_new.npy", allow_pickle=True)
     enze_patient_data = np.asarray(enze_patient_data)
     # labels = build_labels(main_path, enze_patient_data)
     # labels = np.reshape(labels, [320, 2, 14])
@@ -46,7 +46,7 @@ def train(main_path, data_name, parameters, print_flag=True):
     if print_flag:
         print("[{:0>4d}][Step 1] Loading data".format(data_name))
     data_x = load_data(main_path, "/data/data_x_new.npy")
-    data_y = load_data(main_path, "/data/atn_data_y.npy")
+    data_y = load_data(main_path, "/data/data_y_new.npy")
     seed = 1234
     tr_data_x, te_data_x, tr_data_y, te_data_y = train_test_split(
         data_x, data_y, test_size=0.2, random_state=seed
@@ -326,7 +326,7 @@ def train(main_path, data_name, parameters, print_flag=True):
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
-        params = {
+    params = {
         # [Step 2] Define network parameters
         'K': 5,                     # 5
         'h_dim_FC': 8,              # 26

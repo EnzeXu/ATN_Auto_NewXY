@@ -217,7 +217,7 @@ def get_heat_map_data(K, patient_data, label, data_path):
         for j in range(dim_1):
             patient_data_match.append([patient_data[i][j][3], patient_data[i][j][2]])
     data = pd.read_excel(data_path, engine=get_engine())  # main_path + 'DPS_ATN/MRI_information_All_Measurement.xlsx'
-    target_labels = ["MMSE", "CDRSB", "ADAS13"]
+    target_labels = ['EcogPtMem','EcogPtLang','EcogPtVisspat','EcogPtPlan','EcogPtOrgan','EcogPtDivatt','EcogPtTotal','EcogSPMem','EcogSPLang','EcogSPVisspat','EcogSPPlan','EcogSPOrgan','EcogSPDivatt','EcogSPTotal'] #["MMSE", "CDRSB", "ADAS13"]
     data = data[["PTID", "EXAMDATE"] + target_labels]
     # data["EXAMDATE"] = data["EXAMDATE"].astype(str)
     result = []
@@ -231,7 +231,7 @@ def get_heat_map_data(K, patient_data, label, data_path):
             for one_target_label in target_labels:
                 tmp = data.loc[(data["PTID"] == patient_data_match[j][0]) & (data["EXAMDATE"] == patient_data_match[j][1])][one_target_label].values[0]
                 if math.isnan(tmp):
-                    # print("bad in matching PTID = '{}'".format(patient_data_match[j][0]), " EXAMDATE = '{}'".format(patient_data_match[j][1]))
+                    print("bad in matching PTID = '{}'".format(patient_data_match[j][0]), " EXAMDATE = '{}'".format(patient_data_match[j][1]))
                     continue
                 tmp_list = dic.get(one_target_label)
                 tmp_list.append(float(tmp))
@@ -250,31 +250,38 @@ def judge_good_train(labels, heat_map_data, const_cn_ad_labels):
     distribution = np.asarray([dic.get(i) for i in range(5)])
     label_strings = create_label_string(labels, const_cn_ad_labels)
     distribution_string = "/".join(["{}({})".format(x, y) for x, y in zip(distribution, label_strings)])
-    param_1 = distribution.std()
-    three_sums = np.asarray(heat_map_data).sum(axis=0)
-    param_2 = three_sums[0]
-    param_3 = three_sums[1]
-    param_4 = three_sums[2]
-    judge = int(param_1 <= 60 and param_2 <= 40 and param_3 <= 20 and param_4 <= 360)
-    params = {
-        "Cluster_std": param_1,
-        "MMSE_var": param_2,
-        "CDRSB_var": param_3,
-        "ADAS_var": param_4
-    }
-    return judge, params, distribution_string
+    param_cluster_std = distribution.std()
+    fourteen_sums = np.asarray(heat_map_data).sum(axis=0) # three_sums = np.asarray(heat_map_data).sum(axis=0)
+
+    judge = 0
+    param_dic = dict()
+    param_dic["Cluster_std"] = param_cluster_std
+    for i, one_label in enumerate(['EcogPtMem','EcogPtLang','EcogPtVisspat','EcogPtPlan','EcogPtOrgan','EcogPtDivatt','EcogPtTotal','EcogSPMem','EcogSPLang','EcogSPVisspat','EcogSPPlan','EcogSPOrgan','EcogSPDivatt','EcogSPTotal']):
+        param_dic[one_label + "_var"] = fourteen_sums[i]
+    return judge, param_dic, distribution_string
 
 
 def save_record(main_path, index, distribution_string, judge, judge_params, comments, params):
     with open(main_path + "/record/record.csv", "a") as f:
-        f.write("{},{},{},{},{},{},{},{},".format(
+        f.write("{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(
             index,
             judge,
             distribution_string,
             judge_params.get("Cluster_std"),
-            judge_params.get("MMSE_var"),
-            judge_params.get("CDRSB_var"),
-            judge_params.get("ADAS_var"),
+            judge_params.get("EcogPtMem_var"),
+            judge_params.get("EcogPtLang_var"),
+            judge_params.get("EcogPtVisspat_var"),
+            judge_params.get("EcogPtPlan_var"),
+            judge_params.get("EcogPtOrgan_var"),
+            judge_params.get("EcogPtDivatt_var"),
+            judge_params.get("EcogPtTotal_var"),
+            judge_params.get("EcogSPMem_var"),
+            judge_params.get("EcogSPLang_var"),
+            judge_params.get("EcogSPVisspat_var"),
+            judge_params.get("EcogSPPlan_var"),
+            judge_params.get("EcogSPOrgan_var"),
+            judge_params.get("EcogSPDivatt_var"),
+            judge_params.get("EcogSPTotal_var"),
             comments
         ))
         f.write(",".join([str(params.get(one_key)) for one_key in list(params.keys())]))
@@ -284,7 +291,7 @@ def save_record(main_path, index, distribution_string, judge, judge_params, comm
 def get_k_means_result(main_path):
     atn_kmeans_cluster = np.load(main_path + 'data/atn_kmeans_cluster.npy')
     atn_kmeans_cluster = np.asarray(atn_kmeans_cluster)
-    enze_patient_data = np.load(main_path + "data/enze_patient_data_n.npy", allow_pickle=True)
+    enze_patient_data = np.load(main_path + "data/enze_patient_data_new.npy", allow_pickle=True)
     enze_patient_data = np.asarray(enze_patient_data)
     res1 = get_heat_map_data(5, enze_patient_data, atn_kmeans_cluster, main_path + 'data/MRI_information_All_Measurement.xlsx')
     judge, params, distribution_string = judge_good_train(atn_kmeans_cluster, res1)
@@ -300,7 +307,7 @@ def get_start_index(main_path):
 
 def get_ac_tpc_result(main_path, index):
     labels = np.load(main_path + 'saves/{}/proposed/trained/results/labels.npy'.format(index))
-    enze_patient_data = np.load(main_path + "data/enze_patient_data_n.npy", allow_pickle=True)
+    enze_patient_data = np.load(main_path + "data/enze_patient_data_new.npy", allow_pickle=True)
     res = get_heat_map_data(5, enze_patient_data, labels, main_path + 'data/MRI_information_All_Measurement.xlsx')
     return res
 
@@ -353,7 +360,7 @@ def initial_record():
 if __name__ == "__main__":
     warnings.filterwarnings("ignore")
     main_path = os.path.dirname(os.path.abspath("__file__")) + "/"
-    enze_patient_data = np.load(main_path + "data/enze_patient_data_n.npy", allow_pickle=True)
+    enze_patient_data = np.load(main_path + "data/enze_patient_data_new.npy", allow_pickle=True)
     pt_id_list = [item[0][3] for item in enze_patient_data]
     # print(pt_id_list)
     cn_ad_labels = get_cn_ad_labels(main_path, pt_id_list)
