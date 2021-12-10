@@ -1,0 +1,4 @@
+.idea/*
+__pycache__/*
+~*
+atn_data_x_n.npy
